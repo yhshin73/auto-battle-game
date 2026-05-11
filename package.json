@@ -1,20 +1,19 @@
 {
-  "name": "auto-battle-game",
+  "name": "survivor-defense",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "phaser": "^3.90.0"
   },
   "devDependencies": {
     "@types/node": "25.6.0",
-    "@types/react": "19.2.14",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vite": "^5.4.21",
+    "vite-plugin-top-level-await": "^1.6.0"
   }
 }
