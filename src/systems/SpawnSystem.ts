@@ -6,8 +6,8 @@ export class SpawnSystem {
   private scene: Phaser.Scene;
   private enemyGroup: Phaser.Physics.Arcade.Group;
   private spawnTimer!: Phaser.Time.TimerEvent;
-  private spawnInterval: number = 1200;  // 시작 1.2초 간격
-  private spawnCount: number = 4;        // 시작 한 번에 4마리
+  private spawnInterval: number = 2500;  // 시작 2.5초 간격
+  private spawnCount: number = 2;        // 시작 한 번에 2마리
   private countTimer!: Phaser.Time.TimerEvent;
   private gameLevel: number = 1;
   private elapsed: number = 0;
@@ -31,11 +31,11 @@ export class SpawnSystem {
       loop: true,
     });
 
-    // 15초마다 스폰 수 +2, 최대 40마리
+    // 20초마다 스폰 수 +1, 최대 20마리
     this.countTimer = this.scene.time.addEvent({
-      delay: 15000,
+      delay: 20000,
       callback: () => {
-        this.spawnCount = Math.min(this.spawnCount + 2, 40);
+        this.spawnCount = Math.min(this.spawnCount + 1, 20);
       },
       loop: true,
     });
@@ -98,7 +98,7 @@ export class SpawnSystem {
   onLevelUp(newLevel: number): void {
     this.gameLevel = newLevel;
     // 스폰 간격 감소
-    const newInterval = Math.max(400, 1200 - (newLevel - 1) * 80);
+    const newInterval = Math.max(800, 2500 - (newLevel - 1) * 150);
     if (newInterval !== this.spawnInterval) {
       this.spawnInterval = newInterval;
       this.spawnTimer.reset({

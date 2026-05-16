@@ -12,9 +12,10 @@ const config: Phaser.Types.Core.GameConfig = {
   width: 960,
   height: 540,
   backgroundColor: '#0d0d1a',
-  pixelArt: true,       // 픽셀 아트 선명하게 (안티앨리어싱 비활성화)
+  pixelArt: true,
   antialias: false,
   roundPixels: true,
+  dom: { createContainer: true },
   physics: {
     default: 'arcade',
     arcade: { debug: false },
