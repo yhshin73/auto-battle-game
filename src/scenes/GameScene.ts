@@ -33,6 +33,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // 재도전 시 인스턴스 변수 초기화
+    this.isGameOver = false;
+    this.gameTime   = 0;
+
+    // WhirlBlade / DarkOrb 이전 게임 상태 초기화
+    const whirlKey = '__whirl_state__';
+    const orbKey   = '__darkorb_state__';
+    if ((this as any)[whirlKey]) {
+      const ws = (this as any)[whirlKey];
+      ws.blades?.forEach((b: any) => { try { b.gfx.destroy(); b.trail.destroy(); } catch(_) {} });
+      delete (this as any)[whirlKey];
+    }
+    if ((this as any)[orbKey]) {
+      const os = (this as any)[orbKey];
+      os.orbs?.forEach((o: any) => { try { o.destroy(); } catch(_) {} });
+      os.trails?.forEach((t: any) => { try { t.destroy(); } catch(_) {} });
+      delete (this as any)[orbKey];
+    }
+
     // ── 배경 바닥 타일 ────────────────────────────────
     this.add.tileSprite(0, 0, MAP_W, MAP_H, 'bg_tile').setOrigin(0).setDepth(0);
 
