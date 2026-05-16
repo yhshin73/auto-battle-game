@@ -13,31 +13,35 @@ export function MagicArrow(
   weapon: OwnedWeapon,
   _effects: EffectSystem,
 ): void {
-  const allEnemies = (enemies.getChildren() as Enemy[]).filter(e => e.active);
+  const all = (enemies.getChildren() as Enemy[]).filter(e => e.active);
   let baseAngle = -Math.PI / 2;
-  if (allEnemies.length > 0) {
-    let nearest = allEnemies[0];
-    let minDist = Phaser.Math.Distance.Between(player.x, player.y, nearest.x, nearest.y);
-    for (const e of allEnemies) {
-      const d = Phaser.Math.Distance.Between(player.x, player.y, e.x, e.y);
-      if (d < minDist) { minDist = d; nearest = e; }
-    }
+  if (all.length > 0) {
+    const nearest = all.reduce((a, b) =>
+      Phaser.Math.Distance.Between(player.x, player.y, a.x, a.y) <
+      Phaser.Math.Distance.Between(player.x, player.y, b.x, b.y) ? a : b,
+    );
     baseAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
   }
 
   const angles = [baseAngle - Math.PI / 6, baseAngle, baseAngle + Math.PI / 6];
-  const speed = 300;
-  const damage = Math.floor(weapon.data.damage * weapon.damageMultiplier);
+  const speed = 340;
+  const pierceCount = weapon.level; // Lv1=1회, Lv2=2회, ...
 
   for (const angle of angles) {
-    const proj = projectiles.get(player.x, player.y, 'projectile') as Projectile;
+    const proj = projectiles.get(player.x, player.y, 'arrow') as Projectile;
     if (!proj) continue;
     proj.init(
       player.x, player.y,
       Math.cos(angle) * speed, Math.sin(angle) * speed,
-      { damage, piercing: false, dotDamage: 8, dotDuration: 4000 },
+      {
+        damage: weapon.data.damage,
+        pierceCount,
+        tint: 0xcc88ff,
+        displayW: 72,
+        displayH: 24,
+      },
     );
-    proj.setTint(0xaa44ff);
-    proj.setDisplaySize(8, 16);
+    // 화살 방향으로 스프라이트 회전
+    proj.setRotation(angle);
   }
 }

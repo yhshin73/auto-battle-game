@@ -13,15 +13,13 @@ export function ThunderLance(
   weapon: OwnedWeapon,
   effects: EffectSystem,
 ): void {
-  const allEnemies = (enemies.getChildren() as Enemy[]).filter(e => e.active);
+  const all = (enemies.getChildren() as Enemy[]).filter(e => e.active);
   let targetAngle = -Math.PI / 2;
-  if (allEnemies.length > 0) {
-    let nearest = allEnemies[0];
-    let minDist = Phaser.Math.Distance.Between(player.x, player.y, nearest.x, nearest.y);
-    for (const e of allEnemies) {
-      const d = Phaser.Math.Distance.Between(player.x, player.y, e.x, e.y);
-      if (d < minDist) { minDist = d; nearest = e; }
-    }
+  if (all.length > 0) {
+    const nearest = all.reduce((a, b) =>
+      Phaser.Math.Distance.Between(player.x, player.y, a.x, a.y) <
+      Phaser.Math.Distance.Between(player.x, player.y, b.x, b.y) ? a : b,
+    );
     targetAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
   }
 
@@ -30,19 +28,20 @@ export function ThunderLance(
   const ey = player.y + Math.sin(targetAngle) * range;
   effects.thunderLine(player.x, player.y, ex, ey);
 
-  const damage = Math.floor(weapon.data.damage * weapon.damageMultiplier);
-  for (const enemy of allEnemies) {
+  // 레벨별 기절 시간: 0.5s + (level-1)*0.5s
+  const stunDuration = 500 + (weapon.level - 1) * 500;
+  const damage = weapon.data.damage;
+
+  for (const enemy of all) {
     const dist = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
     if (dist > range) continue;
-
-    // 직선 위에 있는지 확인 (선까지의 거리 < 30)
     const cross = Math.abs(
       (enemy.x - player.x) * Math.sin(targetAngle) -
       (enemy.y - player.y) * Math.cos(targetAngle),
     );
     if (cross < 30) {
       const dead = enemy.takeDamage(damage);
-      enemy.applyStun(500);
+      enemy.applyStun(stunDuration);
       if (dead) enemy.die();
     }
   }

@@ -37,6 +37,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   isBoss: boolean = false;
 
   private slowTimer: number = 0;
+  private slowRatio: number = 0.5;  // 슬로우 시 속도 배율
   private stunTimer: number = 0;
   private freezeTimer: number = 0;
   private fearTimer: number = 0;
@@ -93,7 +94,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.freezeTimer > 0) { this.freezeTimer -= delta; this.setVelocity(0, 0); return; }
     if (this.slowTimer   > 0) this.slowTimer -= delta;
 
-    const currentSpeed = this.slowTimer > 0 ? this.speed * 0.5 : this.speed;
+    const currentSpeed = this.slowTimer > 0 ? this.speed * this.slowRatio : this.speed;
 
     // 두려움: 반대로 도망
     if (this.fearTimer > 0) {
@@ -192,7 +193,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setTint(0x88ddff);
     this.scene.time.delayedCall(duration, () => { if (this.active) this.clearTint(); });
   }
-  applySlow(duration: number): void   { this.slowTimer   = duration; }
+  applySlow(duration: number, ratio = 0.5): void {
+    this.slowTimer = duration;
+    this.slowRatio = ratio;
+  }
   applyFear(duration: number): void   { this.fearTimer   = duration; }
 
   private clearAllStatuses(): void {

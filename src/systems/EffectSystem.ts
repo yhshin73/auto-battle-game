@@ -165,4 +165,52 @@ export class EffectSystem {
 
     this.scene.time.delayedCall(200, () => g.destroy());
   }
+
+  // 착탄 화염 영역: 원형 불꽃 영역 + tick DoT
+  fireZone(
+    x: number,
+    y: number,
+    radius: number,
+    duration: number,
+    dotDamage: number,
+    enemies: Phaser.Physics.Arcade.Group,
+    onKill: (e: Phaser.Physics.Arcade.Sprite) => void,
+  ): void {
+    // 시각적 화염 영역
+    const zone = this.scene.add.circle(x, y, radius, 0xff4400, 0.25).setDepth(4);
+    const border = this.scene.add.circle(x, y, radius, 0xff4400, 0)
+      .setStrokeStyle(3, 0xff8800, 0.8).setDepth(4);
+
+    // 화염 깜빡임
+    this.scene.tweens.add({
+      targets: zone,
+      alpha: { from: 0.15, to: 0.35 },
+      duration: 300,
+      yoyo: true,
+      repeat: Math.floor(duration / 600),
+      onComplete: () => { zone.destroy(); border.destroy(); },
+    });
+
+    // 500ms 마다 DoT
+    const ticks = Math.floor(duration / 500);
+    for (let i = 1; i <= ticks; i++) {
+      this.scene.time.delayedCall(500 * i, () => {
+        const allEnemies = enemies.getChildren() as (Phaser.Physics.Arcade.Sprite & {
+          takeDamage: (n: number) => boolean;
+          die: () => void;
+        })[];
+        for (const enemy of allEnemies) {
+          if (!enemy.active) continue;
+          const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+          if (dist <= radius) {
+            const dead = enemy.takeDamage(dotDamage);
+            if (dead) { onKill(enemy); }
+          }
+        }
+      });
+    }
+
+    // 불꽃 파티클
+    this.spawnParticleBurst(x, y, 0xff6600, 12, radius * 0.7, 600);
+  }
 }

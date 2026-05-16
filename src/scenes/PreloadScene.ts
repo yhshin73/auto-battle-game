@@ -213,12 +213,53 @@ export class PreloadScene extends Phaser.Scene {
       wc.refresh();
     }
 
-    // 투사체 폴백 (effect_magic1 로드 실패 시)
+    // 투사체 폴백
     if (!this.textures.exists('projectile')) {
-      const c = this.textures.createCanvas('projectile', 20, 20)!;
+      const c = this.textures.createCanvas('projectile', 100, 100)!;
       const ctx = c.getContext();
       ctx.fillStyle = '#ffff44';
-      ctx.beginPath(); ctx.arc(10, 10, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(50, 50, 20, 0, Math.PI * 2); ctx.fill();
+      c.refresh();
+    }
+
+    // 화살 텍스처 (100x100 프레임, 내부에 화살 그리기)
+    if (!this.textures.exists('arrow')) {
+      const c = this.textures.createCanvas('arrow', 100, 100)!;
+      const ctx = c.getContext();
+      const cx = 50, cy = 50;
+
+      // 보라색 글로우
+      const grad = ctx.createRadialGradient(cx, cy, 4, cx, cy, 28);
+      grad.addColorStop(0, 'rgba(200,120,255,0.6)');
+      grad.addColorStop(1, 'rgba(120,40,200,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2); ctx.fill();
+
+      // 화살대 (가로 막대)
+      ctx.strokeStyle = '#ddaaff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(cx - 24, cy);
+      ctx.lineTo(cx + 18, cy);
+      ctx.stroke();
+
+      // 화살촉 (삼각형)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(cx + 28, cy);     // 끝
+      ctx.lineTo(cx + 14, cy - 7); // 위
+      ctx.lineTo(cx + 14, cy + 7); // 아래
+      ctx.closePath();
+      ctx.fill();
+
+      // 깃털 (화살 뒤쪽)
+      ctx.strokeStyle = '#cc88ff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 30, cy - 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 30, cy + 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 16, cy); ctx.lineTo(cx - 26, cy - 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 16, cy); ctx.lineTo(cx - 26, cy + 6); ctx.stroke();
+
       c.refresh();
     }
   }

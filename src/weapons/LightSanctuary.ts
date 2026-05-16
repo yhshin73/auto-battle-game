@@ -13,26 +13,24 @@ export function LightSanctuary(
   weapon: OwnedWeapon,
   effects: EffectSystem,
 ): void {
-  const radius = 120;
+  // 레벨별 반경: 120 + (level-1)*30
+  const radius = 120 + (weapon.level - 1) * 30;
   const duration = 3000;
-  const dotDamage = Math.floor(weapon.data.damage * weapon.damageMultiplier);
+  const dotDamage = weapon.data.damage;
 
   effects.lightSanctuary(player.x, player.y);
 
-  const snapshotX = player.x;
-  const snapshotY = player.y;
+  const sx = player.x;
+  const sy = player.y;
+  const ticks = Math.floor(duration / 500);
 
-  // DoT 틱 (500ms마다)
-  let ticks = 0;
-  const maxTicks = duration / 500;
-  const timer = scene.time.addEvent({
+  scene.time.addEvent({
     delay: 500,
-    repeat: maxTicks - 1,
+    repeat: ticks - 1,
     callback: () => {
-      ticks++;
-      const allEnemies = (enemies.getChildren() as Enemy[]).filter(e => e.active);
-      for (const enemy of allEnemies) {
-        const dist = Phaser.Math.Distance.Between(snapshotX, snapshotY, enemy.x, enemy.y);
+      const all = (enemies.getChildren() as Enemy[]).filter(e => e.active);
+      for (const enemy of all) {
+        const dist = Phaser.Math.Distance.Between(sx, sy, enemy.x, enemy.y);
         if (dist <= radius) {
           const dead = enemy.takeDamage(dotDamage);
           if (dead) enemy.die();

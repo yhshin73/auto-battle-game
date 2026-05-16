@@ -142,14 +142,28 @@ export class GameScene extends Phaser.Scene {
         const dead = e.takeDamage(damage);
         this.effectSystem.floatingDamage(e.x, e.y - e.displayHeight * 0.6, damage);
 
-        if (p.config.slowDuration)  e.applySlow(p.config.slowDuration);
+        if (p.config.slowDuration)  e.applySlow(p.config.slowDuration, p.config.slowRatio);
         if (p.config.stunDuration)  e.applyStun(p.config.stunDuration);
         if (p.config.freezeChance && Math.random() < p.config.freezeChance) {
-          e.applyFreeze(2000);
+          e.applyFreeze(p.config.freezeDuration ?? 2000);
           this.effectSystem.iceFreeze(e.x, e.y);
         }
         if (p.config.dotDamage && p.config.dotDuration) {
           this.applyDot(e, p.config.dotDamage, p.config.dotDuration);
+        }
+        // 착탄 화염 영역
+        if (p.config.fireZoneRadius && p.config.fireZoneDot) {
+          this.effectSystem.fireZone(
+            e.x, e.y,
+            p.config.fireZoneRadius,
+            p.config.fireZoneDuration ?? 3000,
+            p.config.fireZoneDot,
+            this.enemyGroup,
+            (enemy) => this.killEnemy(enemy as Enemy),
+          );
+        }
+        if (p.config.fearChance && Math.random() < p.config.fearChance) {
+          e.applyFear(p.config.fearDuration ?? 2000);
         }
 
         if (dead) this.killEnemy(e);

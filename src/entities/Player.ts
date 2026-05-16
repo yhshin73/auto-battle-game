@@ -32,6 +32,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hitCooldown: number = 0;
   private currentAnim: PlayerAnim = 'idle';
   private isDead: boolean = false;
+  facingAngle: number = -Math.PI / 2; // 마지막 이동 방향 (라디안)
 
   constructor(config: PlayerConfig) {
     super(config.scene, config.x, config.y, 'wizard_idle');
@@ -91,6 +92,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       const len = Math.sqrt(vx * vx + vy * vy);
       this.setVelocity((vx / len) * this.speed, (vy / len) * this.speed);
       if (vx !== 0) this.setFlipX(vx < 0);
+      this.facingAngle = Math.atan2(vy, vx); // 이동 방향 기록
       this.playAnim('walk');
     } else {
       this.setVelocity(0, 0);

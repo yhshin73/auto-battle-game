@@ -16,7 +16,7 @@ interface WhirlState {
   blades: BladeObj[];
   angle: number;
   level: number;
-  damageCooldown: number;        // 남은 데미지 쿨다운 ms
+  damageCooldown: number;
   hitCooldowns: Map<Enemy, number>;
 }
 
@@ -29,87 +29,103 @@ export function WhirlBlade(
   _effects: EffectSystem,
 ): void {
   const delta = scene.game.loop.delta;
+  const bladeCount  = weapon.level + 1; // Lv1=2개, Lv2=3개, ...
   const orbitRadius = 110;
-  const bladeCount  = Math.min(weapon.level + 1, 4);  // 레벨 오를수록 검 추가 (최대 4개)
-  const damage      = Math.floor(weapon.data.damage * weapon.damageMultiplier);
-  const hitInterval = 400; // ms 마다 데미지
+  const damage      = weapon.data.damage;
+  const hitInterval = 400;
 
-  // ── 상태 초기화 / 레벨업 시 재생성 ─────────────────────
+  // 상태 초기화 / 레벨업 재생성
   let state = (scene as any)[STATE_KEY] as WhirlState | undefined;
-
   if (!state || state.level !== weapon.level) {
-    // 기존 블레이드 제거
     state?.blades.forEach(b => { b.gfx.destroy(); b.trail.destroy(); });
-
     const blades: BladeObj[] = [];
     for (let i = 0; i < bladeCount; i++) {
-      const trail = scene.add.graphics().setDepth(11);
-      const gfx   = scene.add.graphics().setDepth(12);
-      blades.push({ gfx, trail });
+      blades.push({
+        trail: scene.add.graphics().setDepth(11),
+        gfx:   scene.add.graphics().setDepth(12),
+      });
     }
-    state = {
-      blades,
-      angle: 0,
-      level: weapon.level,
-      damageCooldown: 0,
-      hitCooldowns: new Map(),
-    };
+    state = { blades, angle: 0, level: weapon.level, damageCooldown: 0, hitCooldowns: new Map() };
     (scene as any)[STATE_KEY] = state;
   }
 
-  // ── 각도 회전 ─────────────────────────────────────────
-  state.angle += delta * 0.004; // 라디안/ms → 약 230°/s
-
-  // ── 블레이드 위치 업데이트 & 렌더링 ──────────────────
-  const angleStep = (Math.PI * 2) / bladeCount;
+  state.angle += delta * 0.004; // 회전 속도
+  const step = (Math.PI * 2) / bladeCount;
 
   state.blades.forEach((blade, i) => {
-    const a = state!.angle + angleStep * i;
+    const a  = state!.angle + step * i;
     const bx = player.x + Math.cos(a) * orbitRadius;
     const by = player.y + Math.sin(a) * orbitRadius;
 
-    // 잔상 (trail) — 반투명 작은 원
+    // 잔상 (trail)
     blade.trail.clear();
-    blade.trail.fillStyle(0x44ffff, 0.18);
-    blade.trail.fillCircle(bx, by, 22);
+    blade.trail.fillStyle(0x88ccff, 0.12);
+    blade.trail.fillCircle(bx, by, 24);
 
-    // 검 본체 — 밝은 청록 마름모
+    // ── 검 그래픽 ──────────────────────────────────
     blade.gfx.clear();
-    // 글로우 외곽
-    blade.gfx.fillStyle(0x00ccff, 0.25);
-    blade.gfx.fillCircle(bx, by, 26);
-    // 내부 밝은 원
-    blade.gfx.fillStyle(0xaaffff, 0.9);
-    blade.gfx.fillCircle(bx, by, 12);
-    // 중심 흰 점
-    blade.gfx.fillStyle(0xffffff, 1);
-    blade.gfx.fillCircle(bx, by, 5);
+
+    // 검 방향은 공전 접선 방향 (a + PI/2)
+    const swordAngle = a + Math.PI / 2;
+    const cos = Math.cos(swordAngle);
+    const sin = Math.sin(swordAngle);
+
+    // 검날 (얇은 마름모, 길이 34px)
+    const len = 17;
+    const wid = 4;
+    const p1x = bx + cos * len;  const p1y = by + sin * len;   // 끝
+    const p2x = bx - cos * wid;  const p2y = by - sin * wid;   // 좌
+    const p3x = bx - cos * len;  const p3y = by - sin * len;   // 아래
+    const p4x = bx + cos * wid;  const p4y = by + sin * wid;   // 우
+
+    blade.gfx.fillStyle(0xddeeff, 0.95);
+    blade.gfx.fillTriangle(p1x, p1y, p2x - sin * wid, p2y + cos * wid, p3x, p3y);
+    blade.gfx.fillTriangle(p1x, p1y, p4x - sin * wid, p4y + cos * wid, p3x, p3y);
+
+    // 검날 중심선 (반짝임)
+    blade.gfx.lineStyle(2, 0xffffff, 0.7);
+    blade.gfx.beginPath();
+    blade.gfx.moveTo(p1x, p1y);
+    blade.gfx.lineTo(p3x, p3y);
+    blade.gfx.strokePath();
+
+    // 자루 (갈색 짧은 막대)
+    const hiltLen = 8;
+    blade.gfx.lineStyle(5, 0xaa6633, 1);
+    blade.gfx.beginPath();
+    blade.gfx.moveTo(p3x - cos * 2,             p3y - sin * 2);
+    blade.gfx.lineTo(p3x - cos * (2 + hiltLen),  p3y - sin * (2 + hiltLen));
+    blade.gfx.strokePath();
+
+    // 코등이 (가로선)
+    blade.gfx.lineStyle(4, 0xccaa55, 1);
+    const guardX = p3x - cos * 4;
+    const guardY = p3y - sin * 4;
+    blade.gfx.beginPath();
+    blade.gfx.moveTo(guardX - sin * 7, guardY + cos * 7);
+    blade.gfx.lineTo(guardX + sin * 7, guardY - cos * 7);
+    blade.gfx.strokePath();
   });
 
-  // ── 데미지 쿨다운 감소 ────────────────────────────────
+  // 데미지 쿨다운
   state.damageCooldown -= delta;
-
-  // 적 히트 쿨다운 감소
   for (const [enemy, cd] of state.hitCooldowns) {
     if (cd - delta <= 0) state.hitCooldowns.delete(enemy);
     else state.hitCooldowns.set(enemy, cd - delta);
   }
-
   if (state.damageCooldown > 0) return;
   state.damageCooldown = hitInterval;
 
-  // ── 범위 내 적에게 데미지 ────────────────────────────
   const allEnemies = (enemies.getChildren() as Enemy[]).filter(e => e.active);
-
   state.blades.forEach((_, i) => {
-    const a  = state!.angle + angleStep * i;
+    const a  = state!.angle + step * i;
     const bx = player.x + Math.cos(a) * orbitRadius;
     const by = player.y + Math.sin(a) * orbitRadius;
 
     for (const enemy of allEnemies) {
       if (state!.hitCooldowns.has(enemy)) continue;
       const dist = Phaser.Math.Distance.Between(bx, by, enemy.x, enemy.y);
-      if (dist <= 55) {
+      if (dist <= 60) {
         const dead = enemy.takeDamage(damage);
         state!.hitCooldowns.set(enemy, hitInterval);
         if (dead) enemy.die();

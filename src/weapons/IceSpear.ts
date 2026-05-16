@@ -11,32 +11,43 @@ export function IceSpear(
   enemies: Phaser.Physics.Arcade.Group,
   projectiles: Phaser.Physics.Arcade.Group,
   weapon: OwnedWeapon,
-  effects: EffectSystem,
+  _effects: EffectSystem,
 ): void {
-  const allEnemies = (enemies.getChildren() as Enemy[]).filter(e => e.active);
-  let targetAngle = -Math.PI / 2;
-  if (allEnemies.length > 0) {
-    let nearest = allEnemies[0];
-    let minDist = Phaser.Math.Distance.Between(player.x, player.y, nearest.x, nearest.y);
-    for (const e of allEnemies) {
-      const d = Phaser.Math.Distance.Between(player.x, player.y, e.x, e.y);
-      if (d < minDist) { minDist = d; nearest = e; }
-    }
-    targetAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+  const all = (enemies.getChildren() as Enemy[]).filter(e => e.active);
+  let baseAngle = -Math.PI / 2;
+  if (all.length > 0) {
+    const nearest = all.reduce((a, b) =>
+      Phaser.Math.Distance.Between(player.x, player.y, a.x, a.y) <
+      Phaser.Math.Distance.Between(player.x, player.y, b.x, b.y) ? a : b,
+    );
+    baseAngle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
   }
 
+  // 레벨별: 투사체 수 = level, 빙결 시간 = 2000 + (level-1)*500ms
+  const projCount = weapon.level;
+  const freezeDuration = 2000 + (weapon.level - 1) * 500;
+  const spread = 0.2;
   const speed = 320;
-  const proj = projectiles.get(player.x, player.y, 'projectile') as Projectile;
-  if (!proj) return;
-  proj.init(
-    player.x, player.y,
-    Math.cos(targetAngle) * speed, Math.sin(targetAngle) * speed,
-    {
-      damage: Math.floor(weapon.data.damage * weapon.damageMultiplier),
-      piercing: false,
-      freezeChance: 0.3,
-    },
-  );
-  proj.setTint(0x88ddff);
-  proj.setDisplaySize(10, 20);
+
+  for (let i = 0; i < projCount; i++) {
+    const offset = projCount === 1 ? 0 : (i - (projCount - 1) / 2) * spread;
+    const angle = baseAngle + offset;
+
+    const proj = projectiles.get(player.x, player.y, 'projectile') as Projectile;
+    if (!proj) continue;
+    proj.init(
+      player.x, player.y,
+      Math.cos(angle) * speed, Math.sin(angle) * speed,
+      {
+        damage: weapon.data.damage,
+        pierceCount: 0,
+        freezeChance: 1.0,
+        freezeDuration,
+        tint: 0x88ddff,
+        displayW: 80,
+        displayH: 28,
+      },
+    );
+    proj.setRotation(angle);
+  }
 }

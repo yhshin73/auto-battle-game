@@ -13,18 +13,22 @@ export function NatureVine(
   weapon: OwnedWeapon,
   _effects: EffectSystem,
 ): void {
-  const allEnemies = (enemies.getChildren() as Enemy[])
+  // 레벨별: 구속 대상 = 1 + 2*(level-1), 피해 배율 = 1.5 + 0.1*(level-1)
+  const maxTargets = 1 + 2 * (weapon.level - 1);
+  const bonusDamageRatio = 1.5 + 0.1 * (weapon.level - 1);
+  const stunDuration = 1500;
+  const damage = weapon.data.damage;
+
+  const targets = (enemies.getChildren() as Enemy[])
     .filter(e => e.active)
     .sort((a, b) =>
       Phaser.Math.Distance.Between(player.x, player.y, a.x, a.y) -
       Phaser.Math.Distance.Between(player.x, player.y, b.x, b.y),
     )
-    .slice(0, 3);
+    .slice(0, maxTargets);
 
-  const damage = Math.floor(weapon.data.damage * weapon.damageMultiplier);
-
-  for (const enemy of allEnemies) {
-    // 덩굴 라인 그래픽
+  for (const enemy of targets) {
+    // 덩굴 라인 시각 효과
     const g = scene.add.graphics().setDepth(7);
     g.lineStyle(3, 0x44ff44, 0.8);
     g.beginPath();
@@ -32,20 +36,18 @@ export function NatureVine(
     g.lineTo(enemy.x, enemy.y);
     g.strokePath();
 
-    enemy.applyStun(1500);
+    enemy.applyStun(stunDuration);
     const dead = enemy.takeDamage(damage);
 
-    scene.time.delayedCall(1500, () => {
+    scene.time.delayedCall(stunDuration, () => {
       g.destroy();
-      // 구속 해제 후 추가 피해
       if (enemy.active) {
-        const bonusDead = enemy.takeDamage(Math.floor(damage * 0.5));
+        const bonusDmg = Math.floor(damage * bonusDamageRatio);
+        const bonusDead = enemy.takeDamage(bonusDmg);
         if (bonusDead) enemy.die();
       }
     });
 
-    if (dead) {
-      scene.time.delayedCall(0, () => enemy.die());
-    }
+    if (dead) scene.time.delayedCall(0, () => enemy.die());
   }
 }
